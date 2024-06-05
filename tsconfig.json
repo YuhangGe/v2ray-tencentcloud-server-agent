@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "ESNext",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2022",
+    "jsx": "react-jsx",
+    "noImplicitAny": true,
+    "noImplicitReturns": true,
+    "stripInternal": true,
+    "alwaysStrict": true,
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "baseUrl": "."
+  },
+  "include": ["./src/**/*"]
+}
