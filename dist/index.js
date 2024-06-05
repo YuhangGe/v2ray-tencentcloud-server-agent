@@ -19,6 +19,7 @@ var Monitor = class {
     this.#pingTime = Date.now();
   }
   async _destroyInstance(id) {
+    console.log("[agent] ==> will destroy");
     try {
       if (!id) {
         const res = await cvmClient.DescribeInstances({
@@ -35,6 +36,7 @@ var Monitor = class {
           return;
         }
       }
+      console.log("[agent] ==> instance id is:", id);
       await cvmClient.TerminateInstances({
         InstanceIds: [id]
       });
@@ -44,50 +46,140 @@ var Monitor = class {
   }
   async check() {
     const secs = Math.floor((Date.now() - this.#pingTime) / 1e3);
+    console.log(`[agent] ==> check result: ${secs}/600`);
     if (secs > 10 * 60) {
       await this._destroyInstance();
     }
   }
 };
-var monitor = new Monitor();
-setInterval(() => {
-  monitor.check().catch((ex) => {
-    console.error(ex);
+
+// src/v2ray.ts
+import { exec, spawn } from "child_process";
+import path from "path";
+import os from "os";
+import { writeFile } from "fs/promises";
+var HOME_DIR = os.homedir();
+function execShell(cmd) {
+  return new Promise((resolve, reject) => {
+    exec(
+      cmd,
+      {
+        cwd: HOME_DIR
+      },
+      (err, stdout, stderr) => {
+        if (err) reject(err);
+        else {
+          stdout && console.log(stdout);
+          stderr && console.error(stderr);
+          resolve();
+        }
+      }
+    );
   });
-}, 60 * 1e3);
+}
+var Config = JSON.stringify({
+  log: {
+    access: {
+      type: "None"
+    },
+    error: {
+      type: "Console",
+      level: "Error"
+    }
+  },
+  inbounds: [
+    {
+      port: 2080,
+      // 服务器监听端口
+      protocol: "vmess",
+      // 主传入协议
+      settings: {
+        users: [process.env.TOKEN]
+      }
+    }
+  ],
+  outbounds: [
+    {
+      protocol: "freedom",
+      // 主传出协议
+      settings: {}
+    }
+  ]
+});
+async function startV2Ray() {
+  await execShell("rm -rf v2ray v2ray-linux-64.zip");
+  await execShell("wget https://raw.githubusercontent.com/v2ray/dist/master/v2ray-linux-64.zip");
+  await execShell("unzip -o v2ray-linux-64.zip -d v2ray");
+  const v2rayDir = path.join(HOME_DIR, "v2ray");
+  await writeFile(path.join(v2rayDir, "config.json"), Config);
+  const process2 = spawn(
+    path.join(v2rayDir, "v2ray"),
+    ["run", "-c", path.join(v2rayDir, "config.json"), "-format", "jsonv5"],
+    {
+      cwd: v2rayDir
+    }
+  );
+  process2.stdout.on("data", (msg) => {
+    console.log("[v2ray] ==>", msg.toString());
+  });
+  process2.stderr.on("data", (msg) => {
+    console.error("[v2ray] ==>", msg.toString());
+  });
+}
 
 // src/index.ts
 var TOKEN = process.env.TOKEN;
-async function handle(req, res) {
-  if (!TOKEN) {
-    console.error("missing token");
-    req.destroy();
-    return;
+function startMonitorServer() {
+  const monitor = new Monitor();
+  setInterval(
+    () => {
+      monitor.check().catch((ex) => {
+        console.error(ex);
+      });
+    },
+    4 * 60 * 1e3
+  );
+  async function handle(req, res) {
+    if (!TOKEN) {
+      console.error("[agent] ==> missing token");
+      req.destroy();
+      return;
+    }
+    if (req.headers["x-token"] !== TOKEN) {
+      req.destroy();
+      return;
+    }
+    const url = req.url;
+    if (url === "/ping") {
+      monitor.ping();
+      res.write("pong!");
+      res.end();
+    } else {
+      res.writeHead(404);
+      res.end();
+    }
   }
-  if (req.headers["x-token"] !== TOKEN) {
-    req.destroy();
-    return;
-  }
-  const url = req.url;
-  if (url === "/ping") {
-    monitor.ping();
-    res.write("pong!");
-    res.end();
-  } else {
-    res.writeHead(404);
-    res.end();
-  }
-}
-var server = createServer((req, res) => {
-  try {
-    handle(req, res).catch((ex) => {
-      console.error(ex);
+  return new Promise((resolve) => {
+    const server = createServer((req, res) => {
+      try {
+        handle(req, res).catch((ex) => {
+          console.error(ex);
+        });
+      } catch (ex) {
+        console.error(ex);
+      }
     });
-  } catch (ex) {
-    console.error(ex);
-  }
-});
-server.listen(2081, "0.0.0.0", () => {
-  console.info("V2Ray Server Agent Listening At 0.0.0.0:2081");
+    server.listen(2081, "0.0.0.0", () => {
+      console.info("[agent] ==> Agent Listening At 0.0.0.0:2081");
+      resolve();
+    });
+  });
+}
+async function bootstrap() {
+  await startV2Ray();
+  await startMonitorServer();
+}
+bootstrap().catch((ex) => {
+  console.error(ex);
 });
 //# sourceMappingURL=index.js.map

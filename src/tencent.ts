@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { cvm } from 'tencentcloud-sdk-nodejs';
 
 const cvmClient = new cvm.v20170312.Client({
@@ -17,6 +18,7 @@ export class Monitor {
     this.#pingTime = Date.now();
   }
   async _destroyInstance(id?: string) {
+    console.log('[agent] ==> will destroy');
     try {
       if (!id) {
         const res = await cvmClient.DescribeInstances({
@@ -33,6 +35,7 @@ export class Monitor {
           return;
         }
       }
+      console.log('[agent] ==> instance id is:', id);
       await cvmClient.TerminateInstances({
         InstanceIds: [id],
       });
@@ -42,16 +45,10 @@ export class Monitor {
   }
   async check() {
     const secs = Math.floor((Date.now() - this.#pingTime) / 1000);
+    console.log(`[agent] ==> check result: ${secs}/600`);
     if (secs > 10 * 60) {
       // 如果 10 分钟内都没有收到客户端的 ping 消息，销毁机器
       await this._destroyInstance();
     }
   }
 }
-
-export const monitor = new Monitor();
-setInterval(() => {
-  monitor.check().catch((ex) => {
-    console.error(ex);
-  });
-}, 60 * 1000);
