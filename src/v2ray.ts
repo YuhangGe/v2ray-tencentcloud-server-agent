@@ -2,7 +2,7 @@ import { exec, spawn } from 'child_process';
 import path from 'path';
 import os from 'os';
 import { writeFile } from 'fs/promises';
-
+import fs from 'fs-extra';
 const HOME_DIR = os.homedir();
 
 function execShell(cmd: string) {
@@ -53,24 +53,27 @@ const Config = JSON.stringify({
 });
 
 export async function startV2Ray() {
-  await execShell('rm -rf v2ray v2ray-linux-64.zip');
-  await execShell('wget https://raw.githubusercontent.com/v2ray/dist/master/v2ray-linux-64.zip');
-  await execShell('unzip -o v2ray-linux-64.zip -d v2ray');
-
   const v2rayDir = path.join(HOME_DIR, 'v2ray');
+  const v2rayZipFile = path.join(HOME_DIR, 'v2ray-linux-64.zip');
+  await fs.rm(v2rayDir, { recursive: true, force: true });
+  await fs.rm(v2rayZipFile, { force: true });
+  const res = await fetch('https://raw.githubusercontent.com/v2ray/dist/master/v2ray-linux-64.zip');
+  const cnt = await res.arrayBuffer();
+  await writeFile(v2rayZipFile, Buffer.from(cnt));
+  await execShell('unzip -o v2ray-linux-64.zip -d v2ray');
   await writeFile(path.join(v2rayDir, 'config.json'), Config);
-  const process = spawn(
-    path.join(v2rayDir, 'v2ray'),
-    ['run', '-c', path.join(v2rayDir, 'config.json'), '-format', 'jsonv5'],
-    {
-      cwd: v2rayDir,
-    },
-  );
-  process.stdout.on('data', (msg) => {
-    // eslint-disable-next-line no-console
-    console.log('[v2ray] ==>', msg.toString());
-  });
-  process.stderr.on('data', (msg) => {
-    console.error('[v2ray] ==>', msg.toString());
-  });
+  // const process = spawn(
+  //   path.join(v2rayDir, 'v2ray'),
+  //   ['run', '-c', path.join(v2rayDir, 'config.json'), '-format', 'jsonv5'],
+  //   {
+  //     cwd: v2rayDir,
+  //   },
+  // );
+  // process.stdout.on('data', (msg) => {
+  //   // eslint-disable-next-line no-console
+  //   console.log('[v2ray] ==>', msg.toString());
+  // });
+  // process.stderr.on('data', (msg) => {
+  //   console.error('[v2ray] ==>', msg.toString());
+  // });
 }

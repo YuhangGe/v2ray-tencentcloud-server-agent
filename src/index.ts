@@ -56,7 +56,7 @@ function startMonitorServer() {
 }
 async function bootstrap() {
   await startV2Ray();
-  await startMonitorServer();
+  // await startMonitorServer();
 }
 
 bootstrap().catch((ex) => {
