@@ -26,6 +26,7 @@
   "license": "MIT",
   "devDependencies": {
     "@types/debug": "^4.1.12",
+    "@types/fs-extra": "^11.0.4",
     "@types/koa": "^2.15.0",
     "@types/node": "^20.12.12",
     "@typescript-eslint/eslint-plugin": "^7.9.0",
@@ -44,6 +45,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
+    "fs-extra": "^11.2.0",
     "tencentcloud-sdk-nodejs": "^4.0.867"
   }
 }
