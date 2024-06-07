@@ -129,6 +129,7 @@ async function startV2Ray() {
 
 // src/index.ts
 var TOKEN = process.env.TOKEN;
+var PING_URL = `/ping?token=${TOKEN}`;
 function startMonitorServer() {
   const monitor = new Monitor();
   setInterval(
@@ -145,18 +146,13 @@ function startMonitorServer() {
       req.destroy();
       return;
     }
-    if (req.headers["x-token"] !== TOKEN) {
-      req.destroy();
-      return;
-    }
     const url = req.url;
-    if (url === "/ping") {
+    if (url === PING_URL) {
       monitor.ping();
       res.write("pong!");
       res.end();
     } else {
-      res.writeHead(404);
-      res.end();
+      req.destroy();
     }
   }
   return new Promise((resolve) => {

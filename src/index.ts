@@ -4,6 +4,7 @@ import { Monitor } from './tencent';
 import { startV2Ray } from './v2ray';
 
 const TOKEN = process.env.TOKEN;
+const PING_URL = `/ping?token=${TOKEN}`;
 
 function startMonitorServer() {
   const monitor = new Monitor();
@@ -22,18 +23,13 @@ function startMonitorServer() {
       req.destroy();
       return;
     }
-    if (req.headers['x-token'] !== TOKEN) {
-      req.destroy();
-      return;
-    }
     const url = req.url;
-    if (url === '/ping') {
+    if (url === PING_URL) {
       monitor.ping();
       res.write('pong!');
       res.end();
     } else {
-      res.writeHead(404);
-      res.end();
+      req.destroy();
     }
   }
 
