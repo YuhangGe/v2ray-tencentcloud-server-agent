@@ -12,11 +12,17 @@ var cvmClient = new cvm.v20170312.Client({
 });
 var Monitor = class {
   #pingTime;
+  #delayTime;
   constructor() {
     this.#pingTime = Date.now();
+    this.#delayTime = Date.now() - 1e4;
   }
   ping() {
     this.#pingTime = Date.now();
+  }
+  /** 延迟 30 分钟销毁，30 分钟内没有 ping 也不销毁 */
+  delay(minutes = 30) {
+    this.#delayTime = Date.now() + minutes * 60 * 1e3;
   }
   async _destroyInstance(id) {
     console.log("[agent] ==> will destroy");
@@ -45,6 +51,9 @@ var Monitor = class {
     }
   }
   async check() {
+    if (Date.now() < this.#delayTime) {
+      return;
+    }
     const secs = Math.floor((Date.now() - this.#pingTime) / 1e3);
     console.log(`[agent] ==> check result: ${secs}/600`);
     if (secs > 10 * 60) {
@@ -150,6 +159,7 @@ async function startV2Ray() {
 // src/index.ts
 var TOKEN = process.env.TOKEN;
 var PING_URL = `/ping?token=${TOKEN}`;
+var DELAY_URL = `/delay?token=${TOKEN}&minutes=`;
 function startMonitorServer() {
   const monitor = new Monitor();
   setInterval(
@@ -170,6 +180,11 @@ function startMonitorServer() {
     if (url === PING_URL) {
       monitor.ping();
       res.write("pong!");
+      res.end();
+    } else if (url.startsWith(DELAY_URL)) {
+      const m = url.slice(DELAY_URL.length);
+      monitor.delay(parseInt(m));
+      res.write("ok!");
       res.end();
     } else {
       req.destroy();

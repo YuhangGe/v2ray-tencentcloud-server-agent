@@ -5,6 +5,7 @@ import { startV2Ray } from './v2ray';
 
 const TOKEN = process.env.TOKEN;
 const PING_URL = `/ping?token=${TOKEN}`;
+const DELAY_URL = `/delay?token=${TOKEN}&minutes=`;
 
 function startMonitorServer() {
   const monitor = new Monitor();
@@ -27,6 +28,11 @@ function startMonitorServer() {
     if (url === PING_URL) {
       monitor.ping();
       res.write('pong!');
+      res.end();
+    } else if (url.startsWith(DELAY_URL)) {
+      const m = url.slice(DELAY_URL.length);
+      monitor.delay(parseInt(m));
+      res.write('ok!');
       res.end();
     } else {
       req.destroy();

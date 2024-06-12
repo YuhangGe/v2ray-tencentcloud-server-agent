@@ -11,11 +11,17 @@ const cvmClient = new cvm.v20170312.Client({
 
 export class Monitor {
   #pingTime: number;
+  #delayTime: number;
   constructor() {
     this.#pingTime = Date.now();
+    this.#delayTime = Date.now() - 10000;
   }
   ping() {
     this.#pingTime = Date.now();
+  }
+  /** 延迟 30 分钟销毁，30 分钟内没有 ping 也不销毁 */
+  delay(minutes = 30) {
+    this.#delayTime = Date.now() + minutes * 60 * 1000;
   }
   async _destroyInstance(id?: string) {
     console.log('[agent] ==> will destroy');
@@ -44,6 +50,10 @@ export class Monitor {
     }
   }
   async check() {
+    if (Date.now() < this.#delayTime) {
+      // 未到延迟时间，不销毁主机。
+      return;
+    }
     const secs = Math.floor((Date.now() - this.#pingTime) / 1000);
     console.log(`[agent] ==> check result: ${secs}/600`);
     if (secs > 10 * 60) {
