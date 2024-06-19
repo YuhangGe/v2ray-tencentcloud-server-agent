@@ -87,7 +87,7 @@ function execShell(cmd) {
     );
   });
 }
-var Config = JSON.stringify({
+var Config = {
   log: {
     access: {
       type: "None"
@@ -115,7 +115,7 @@ var Config = JSON.stringify({
       settings: {}
     }
   ]
-});
+};
 async function downloadV2ray(v2rayZipFile) {
   for (let i = 0; i < 5; i++) {
     try {
@@ -131,7 +131,8 @@ async function downloadV2ray(v2rayZipFile) {
   }
   throw new Error("download v2ray failed");
 }
-async function startV2Ray() {
+var proc = null;
+async function prepareV2Ray() {
   console.log("Clear Old V2Ray...");
   const v2rayDir = path.join(HOME_DIR, "v2ray");
   const v2rayZipFile = path.join(HOME_DIR, "v2ray-linux-64.zip");
@@ -140,18 +141,33 @@ async function startV2Ray() {
   console.log("Download V2Ray: v2ray-linux-64.zip...");
   await downloadV2ray(v2rayZipFile);
   await execShell("unzip -o v2ray-linux-64.zip -d v2ray");
-  await writeFile(path.join(v2rayDir, "config.json"), Config);
-  const process2 = spawn(
+}
+async function startV2Ray(enableSocks = false) {
+  if (proc) {
+    proc.kill();
+  }
+  if (enableSocks) {
+    Config.inbounds.push({
+      port: 2082,
+      protocol: "socks"
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    });
+  } else {
+    Config.inbounds.length = 1;
+  }
+  const v2rayDir = path.join(HOME_DIR, "v2ray");
+  await writeFile(path.join(v2rayDir, "config.json"), JSON.stringify(Config));
+  proc = spawn(
     path.join(v2rayDir, "v2ray"),
     ["run", "-c", path.join(v2rayDir, "config.json"), "-format", "jsonv5"],
     {
       cwd: v2rayDir
     }
   );
-  process2.stdout.on("data", (msg) => {
+  proc.stdout.on("data", (msg) => {
     console.log("[v2ray] ==>", msg.toString());
   });
-  process2.stderr.on("data", (msg) => {
+  proc.stderr.on("data", (msg) => {
     console.error("[v2ray] ==>", msg.toString());
   });
 }
@@ -160,6 +176,7 @@ async function startV2Ray() {
 var TOKEN = process.env.TOKEN;
 var PING_URL = `/ping?token=${TOKEN}`;
 var DELAY_URL = `/delay?token=${TOKEN}&minutes=`;
+var SOCKS_URL = `/socks?token=${TOKEN}&enable=`;
 function startMonitorServer() {
   const monitor = new Monitor();
   setInterval(
@@ -180,6 +197,11 @@ function startMonitorServer() {
     if (url === PING_URL) {
       monitor.ping();
       res.write("pong!");
+      res.end();
+    } else if (url.startsWith(SOCKS_URL)) {
+      const enabled = url.slice(SOCKS_URL.length);
+      void startV2Ray(enabled === "true");
+      res.write("ok!");
       res.end();
     } else if (url.startsWith(DELAY_URL)) {
       const m = url.slice(DELAY_URL.length);
@@ -207,6 +229,7 @@ function startMonitorServer() {
   });
 }
 async function bootstrap() {
+  await prepareV2Ray();
   await startV2Ray();
   await startMonitorServer();
 }

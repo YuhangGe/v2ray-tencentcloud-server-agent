@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import type { ChildProcessWithoutNullStreams } from 'child_process';
 import { exec, spawn } from 'child_process';
 import path from 'path';
 import os from 'os';
@@ -26,7 +27,7 @@ function execShell(cmd: string) {
   });
 }
 
-const Config = JSON.stringify({
+const Config = {
   log: {
     access: {
       type: 'None',
@@ -51,7 +52,7 @@ const Config = JSON.stringify({
       settings: {},
     },
   ],
-});
+};
 
 async function downloadV2ray(v2rayZipFile: string) {
   for (let i = 0; i < 5; i++) {
@@ -68,7 +69,9 @@ async function downloadV2ray(v2rayZipFile: string) {
   }
   throw new Error('download v2ray failed');
 }
-export async function startV2Ray() {
+
+let proc: ChildProcessWithoutNullStreams = null;
+export async function prepareV2Ray() {
   console.log('Clear Old V2Ray...');
   const v2rayDir = path.join(HOME_DIR, 'v2ray');
   const v2rayZipFile = path.join(HOME_DIR, 'v2ray-linux-64.zip');
@@ -77,19 +80,35 @@ export async function startV2Ray() {
   console.log('Download V2Ray: v2ray-linux-64.zip...');
   await downloadV2ray(v2rayZipFile);
   await execShell('unzip -o v2ray-linux-64.zip -d v2ray');
-  await writeFile(path.join(v2rayDir, 'config.json'), Config);
-  const process = spawn(
+}
+
+export async function startV2Ray(enableSocks = false) {
+  if (proc) {
+    proc.kill();
+  }
+  if (enableSocks) {
+    Config.inbounds.push({
+      port: 2082,
+      protocol: 'socks',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
+  } else {
+    Config.inbounds.length = 1;
+  }
+  const v2rayDir = path.join(HOME_DIR, 'v2ray');
+  await writeFile(path.join(v2rayDir, 'config.json'), JSON.stringify(Config));
+  proc = spawn(
     path.join(v2rayDir, 'v2ray'),
     ['run', '-c', path.join(v2rayDir, 'config.json'), '-format', 'jsonv5'],
     {
       cwd: v2rayDir,
     },
   );
-  process.stdout.on('data', (msg) => {
+  proc.stdout.on('data', (msg) => {
     // eslint-disable-next-line no-console
     console.log('[v2ray] ==>', msg.toString());
   });
-  process.stderr.on('data', (msg) => {
+  proc.stderr.on('data', (msg) => {
     console.error('[v2ray] ==>', msg.toString());
   });
 }

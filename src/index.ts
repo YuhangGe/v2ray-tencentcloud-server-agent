@@ -1,11 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createServer } from 'node:http';
 import { Monitor } from './tencent';
-import { startV2Ray } from './v2ray';
+import { prepareV2Ray, startV2Ray } from './v2ray';
 
 const TOKEN = process.env.TOKEN;
 const PING_URL = `/ping?token=${TOKEN}`;
 const DELAY_URL = `/delay?token=${TOKEN}&minutes=`;
+const SOCKS_URL = `/socks?token=${TOKEN}&enable=`;
 
 function startMonitorServer() {
   const monitor = new Monitor();
@@ -28,6 +29,11 @@ function startMonitorServer() {
     if (url === PING_URL) {
       monitor.ping();
       res.write('pong!');
+      res.end();
+    } else if (url.startsWith(SOCKS_URL)) {
+      const enabled = url.slice(SOCKS_URL.length);
+      void startV2Ray(enabled === 'true');
+      res.write('ok!');
       res.end();
     } else if (url.startsWith(DELAY_URL)) {
       const m = url.slice(DELAY_URL.length);
@@ -57,6 +63,7 @@ function startMonitorServer() {
   });
 }
 async function bootstrap() {
+  await prepareV2Ray();
   await startV2Ray();
   await startMonitorServer();
 }
