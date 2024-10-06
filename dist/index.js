@@ -36,7 +36,7 @@ var Monitor = class {
             }
           ]
         });
-        id = res.InstanceSet[0]?.InstanceId;
+        id = res.InstanceSet?.[0]?.InstanceId;
         if (!id) {
           console.error("Instance not found!");
           return;
@@ -63,10 +63,10 @@ var Monitor = class {
 };
 
 // src/v2ray.ts
-import { exec, spawn } from "child_process";
-import path from "path";
-import os from "os";
-import { writeFile } from "fs/promises";
+import { exec, spawn } from "node:child_process";
+import path from "node:path";
+import os from "node:os";
+import { writeFile } from "node:fs/promises";
 import fs from "fs-extra";
 var HOME_DIR = os.homedir();
 function execShell(cmd) {
@@ -187,6 +187,7 @@ function startMonitorServer() {
     },
     4 * 60 * 1e3
   );
+  monitor.delay(30);
   async function handle(req, res) {
     if (!TOKEN) {
       console.error("[agent] ==> missing token");
@@ -194,6 +195,10 @@ function startMonitorServer() {
       return;
     }
     const url = req.url;
+    if (!url) {
+      res.end();
+      return;
+    }
     if (url === PING_URL) {
       monitor.ping();
       res.write("pong!");

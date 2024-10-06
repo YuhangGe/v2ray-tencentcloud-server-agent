@@ -3,15 +3,15 @@
     "module": "ESNext",
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "target": "ES2022",
-    "jsx": "react-jsx",
+    "target": "ESNext",
     "noImplicitAny": true,
     "noImplicitReturns": true,
+    "strictNullChecks": true,
     "stripInternal": true,
     "alwaysStrict": true,
     "moduleResolution": "Bundler",
     "noEmit": true,
     "baseUrl": "."
   },
-  "include": ["./src/**/*"]
+  "include": ["src", "*.js", "*.mjs"]
 }

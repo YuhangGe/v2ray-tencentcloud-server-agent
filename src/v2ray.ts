@@ -1,9 +1,8 @@
-/* eslint-disable no-console */
-import type { ChildProcessWithoutNullStreams } from 'child_process';
-import { exec, spawn } from 'child_process';
-import path from 'path';
-import os from 'os';
-import { writeFile } from 'fs/promises';
+import type { ChildProcessWithoutNullStreams } from 'node:child_process';
+import { exec, spawn } from 'node:child_process';
+import path from 'node:path';
+import os from 'node:os';
+import { writeFile } from 'node:fs/promises';
 import fs from 'fs-extra';
 const HOME_DIR = os.homedir();
 
@@ -17,7 +16,6 @@ function execShell(cmd: string) {
       (err, stdout, stderr) => {
         if (err) reject(err);
         else {
-          // eslint-disable-next-line no-console
           stdout && console.log(stdout);
           stderr && console.error(stderr);
           resolve();
@@ -70,7 +68,7 @@ async function downloadV2ray(v2rayZipFile: string) {
   throw new Error('download v2ray failed');
 }
 
-let proc: ChildProcessWithoutNullStreams = null;
+let proc: ChildProcessWithoutNullStreams | null = null;
 export async function prepareV2Ray() {
   console.log('Clear Old V2Ray...');
   const v2rayDir = path.join(HOME_DIR, 'v2ray');
@@ -105,7 +103,6 @@ export async function startV2Ray(enableSocks = false) {
     },
   );
   proc.stdout.on('data', (msg) => {
-    // eslint-disable-next-line no-console
     console.log('[v2ray] ==>', msg.toString());
   });
   proc.stderr.on('data', (msg) => {

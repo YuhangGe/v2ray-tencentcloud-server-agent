@@ -19,6 +19,9 @@ function startMonitorServer() {
     4 * 60 * 1000,
   );
 
+  // 首次启动延迟30分钟。即初始启动时30分钟内都不关闭主机，30分钟后如果没有客户端的 ping 则关闭销毁。
+  monitor.delay(30);
+
   async function handle(req: IncomingMessage, res: ServerResponse) {
     if (!TOKEN) {
       console.error('[agent] ==> missing token');
@@ -26,6 +29,10 @@ function startMonitorServer() {
       return;
     }
     const url = req.url;
+    if (!url) {
+      res.end();
+      return;
+    }
     if (url === PING_URL) {
       monitor.ping();
       res.write('pong!');
@@ -56,7 +63,6 @@ function startMonitorServer() {
       }
     });
     server.listen(2081, '0.0.0.0', () => {
-      // eslint-disable-next-line no-console
       console.info('[agent] ==> Agent Listening At 0.0.0.0:2081');
       resolve();
     });

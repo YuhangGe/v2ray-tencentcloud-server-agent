@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { cvm } from 'tencentcloud-sdk-nodejs';
 
 const cvmClient = new cvm.v20170312.Client({
@@ -31,11 +30,11 @@ export class Monitor {
           Filters: [
             {
               Name: 'instance-name',
-              Values: [process.env.RESOURCE_NAME],
+              Values: [process.env.RESOURCE_NAME!],
             },
           ],
         });
-        id = res.InstanceSet[0]?.InstanceId;
+        id = res.InstanceSet?.[0]?.InstanceId;
         if (!id) {
           console.error('Instance not found!');
           return;
