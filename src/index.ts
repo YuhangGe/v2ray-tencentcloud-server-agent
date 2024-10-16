@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createServer } from 'node:http';
 import { Monitor } from './tencent';

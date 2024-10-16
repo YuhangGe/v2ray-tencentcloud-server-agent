@@ -11,3 +11,4 @@ node_modules
 dist/index.js.map
 lib/
 types/
+.env

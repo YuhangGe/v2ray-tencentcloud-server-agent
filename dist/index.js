@@ -1,4 +1,5 @@
 // src/index.ts
+import "dotenv/config";
 import { createServer } from "node:http";
 
 // src/tencent.ts
