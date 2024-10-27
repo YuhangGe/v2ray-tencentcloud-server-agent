@@ -48,6 +48,7 @@ const Config = {
     {
       protocol: 'freedom', // 主传出协议
       settings: {},
+      domainStrategy: "UseIPv6"
     },
   ],
 };
