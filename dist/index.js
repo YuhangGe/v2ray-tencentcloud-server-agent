@@ -121,7 +121,8 @@ async function downloadV2ray(v2rayZipFile) {
   for (let i = 0; i < 5; i++) {
     try {
       const res = await fetch(
-        "https://raw.githubusercontent.com/v2ray/dist/master/v2ray-linux-64.zip"
+        "https://github.com/v2fly/v2ray-core/releases/download/v5.22.0/v2ray-linux-64.zip"
+        // 'https://raw.githubusercontent.com/v2ray/dist/master/v2ray-linux-64.zip',
       );
       const cnt = await res.arrayBuffer();
       await writeFile(v2rayZipFile, Buffer.from(cnt));
