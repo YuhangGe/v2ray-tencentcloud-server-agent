@@ -189,7 +189,7 @@ function startMonitorServer() {
     },
     4 * 60 * 1e3
   );
-  monitor.delay(30);
+  monitor.delay(60);
   async function handle(req, res) {
     if (!TOKEN) {
       console.error("[agent] ==> missing token");

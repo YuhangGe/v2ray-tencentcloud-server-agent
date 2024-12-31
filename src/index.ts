@@ -20,8 +20,8 @@ function startMonitorServer() {
     4 * 60 * 1000,
   );
 
-  // 首次启动延迟30分钟。即初始启动时30分钟内都不关闭主机，30分钟后如果没有客户端的 ping 则关闭销毁。
-  monitor.delay(30);
+  // 首次启动延迟60分钟。即初始启动时60分钟内都不关闭主机，60分钟后如果没有客户端的 ping 则关闭销毁。
+  monitor.delay(60);
 
   async function handle(req: IncomingMessage, res: ServerResponse) {
     if (!TOKEN) {
